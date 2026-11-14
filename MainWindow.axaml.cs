@@ -17,7 +17,7 @@ namespace SciLors_Mashed_Trainer {
         private Win32MemoryTarget? win32Target;
         private int idleTicks;
 
-        public string ProgramVersion => "v0.2.1";
+        public string ProgramVersion => "v0.2.2";
         public string ProgramName => "mashed-trainer";
         public string ProgramLongName => "SciLor's Mashed Trainer";
         public string ProgramTitle => $"{ProgramLongName} {ProgramVersion}";
