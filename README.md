@@ -1,4 +1,4 @@
-# SciLor's Mashed Trainer v0.2.1
+# SciLor's Mashed Trainer v0.2.2
 
 A trainer for the PC game **Mashed: Fully Loaded**. Change scores, weapons, damage and positions for every player, tweak the camera, and add fun modifiers like random weapons and drive-over revive.
 
@@ -78,6 +78,10 @@ Start the trainer with `--simulate` to run against a built-in fake game (`MockMe
 ---
 
 ## ChangeLog
+
+### v0.2.2 (2026-11-14)
+- Fixed Flip: the car no longer falls through the ground (lift 2.0, measured in the original game)
+- Fixed flipping a car back from its roof, which the game's physics engine undid within one frame
 
 ### v0.2.1 (2026-10-09)
 - Ported from .NET Framework 4.5 / WPF to .NET 8 / Avalonia
