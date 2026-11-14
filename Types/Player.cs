@@ -37,7 +37,13 @@ namespace SciLors_Mashed_Trainer.Types {
         private const int PLAYER_POSITION_X = MATRIX_POS + 0x00;
         private const int PLAYER_POSITION_Y = MATRIX_POS + 0x08;
         private const int PLAYER_POSITION_Z = MATRIX_POS + 0x04;
-        private const float FLIP_LIFT = 1.5f;
+        private const float FLIP_LIFT = 2.0f;
+        // A car that landed on its roof is simulated by the physics library (rwp mode), which rewrites the car matrices
+        // from its body every tick, so a pose written meanwhile is lost within one frame. Clearing rwp_object and giving
+        // the 600 ms re-entry timer (car_enter_rwp_mode value) lets the normal car physics take over again.
+        private const int PLAYER_RWP_OBJECT = 0x14;
+        private const int PLAYER_RWP_TIMER = 0x18;
+        private const int RWP_TIMER_MS = 600;
 
         private const int PLAYER_POINTS_CHANGE_OFFSET = 0x40;
         private const int PLAYER_POINTS_CHANGE_VISUAL_OFFSET = 0x20;
@@ -321,6 +327,10 @@ namespace SciLors_Mashed_Trainer.Types {
                 WriteVector(MatrixOffset(i) + MATRIX_RIGHT, right);
                 WriteVector(MatrixOffset(i) + MATRIX_UP, up);
                 WriteVector(MatrixOffset(i) + MATRIX_POS, pos);
+            }
+            if (Target.Read<int>(IntPtr.Add(BASE_ADDRESS, playerBaseOffset + PLAYER_RWP_OBJECT)) != 0) {
+                Target.Write<int>(IntPtr.Add(BASE_ADDRESS, playerBaseOffset + PLAYER_RWP_OBJECT), 0);
+                Target.Write<int>(IntPtr.Add(BASE_ADDRESS, playerBaseOffset + PLAYER_RWP_TIMER), RWP_TIMER_MS);
             }
         }
 
