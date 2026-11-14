@@ -49,12 +49,23 @@ namespace SciLors_Mashed_Trainer.Tests {
             game.Update();
 
             Assert.That(p1.IsOnRoof, Is.True, "Car should be on roof after flip");
-            Assert.That(p1.Position.Z, Is.EqualTo(initialZ + 1.5f).Within(0.01f), "Car should be lifted by 1.5 after flip");
+            Assert.That(p1.Position.Z, Is.EqualTo(initialZ + 2.0f).Within(0.01f), "Car should be lifted by 2.0 after flip");
 
             // Flip back
             p1.Flip();
             game.Update();
             Assert.That(p1.IsOnRoof, Is.False, "Car should be upright after second flip");
+        }
+
+        [Test]
+        public void TestFlipLeavesPhysicsLibraryMode() {
+            // car on its roof is simulated by the physics library (Car.rwp_object 0x14, rwp_timer 0x18): Flip must hand it back to the car physics
+            var baseAddr = new IntPtr(0x8B06E0);
+            target.Write<int>(IntPtr.Add(baseAddr, 0x14), 1);
+            target.Write<int>(IntPtr.Add(baseAddr, 0x18), 0);
+            game.Players[0].Flip();
+            Assert.That(target.Read<int>(IntPtr.Add(baseAddr, 0x14)), Is.EqualTo(0));
+            Assert.That(target.Read<int>(IntPtr.Add(baseAddr, 0x18)), Is.EqualTo(600));
         }
 
         [Test]

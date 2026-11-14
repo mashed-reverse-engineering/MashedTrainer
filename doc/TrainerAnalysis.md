@@ -48,9 +48,10 @@ Camera smoothing also multiplies by 0.8 (`0x5DDB18`) in ~12 other places; left a
 
 ## New: flip / turn
 Car pose = RwMatrix `{right, up, at, pos}` (0x40 bytes) in the double buffer above; velocity at `car+0x144` (assumed world
-space). `Player.Flip()` negates right and up (180 deg around forward) and lifts 1.5 units; `Player.Turn(deg)` rotates
+space). `Player.Flip()` negates right and up (180 deg around forward) and lifts 2 units (measured in the original game, course 0: an inverted car rests 0.44 higher than an upright one, so lift 0 falls through the ground, 0.3-1.0 gets launched 5-8 units up by the collision push-out, 1.5-3 lands cleanly on the roof, 4+ bounces and rolls back onto its wheels; roof to upright needs no lift; tools/wine-run/flipexp.sh); `Player.Turn(deg)` rotates
 right/at around up and rotates the velocity the same way. The game re-orthonormalises every tick
 (`MatrixOrthoNormalize`), so exact orthonormal values are stable. Buttons "Flip" / "Turn 180" are in the player panel.
 `IsOnRoof` = `up.y < 0`; Drive-over-revive now flips a revived car that lies on its roof.
-Untested in game: axis/sign conventions (forward = `at`), the 1.5 lift, and whether wheel contact state needs a reset
+Untested in game: axis/sign conventions (forward = `at`), the 2.0 lift on other courses and cars, and whether wheel contact state needs a reset
 after a flip.
+Verified in the original game (tools/wine-run/flipexp.sh, flipdiag2.pl): a car that lands on its roof switches to rwp mode (Car+0x14 rwp_object, +0x18 rwp_timer) and the physics library rewrites its matrices every tick, so flipping it back was undone within one frame; Flip() now clears rwp_object and sets rwp_timer to 600 and the car lands on its wheels (rest y 0.434 on course 0). Second car group (course row 6): inverted rest is 0.33 above upright (0.305 vs -0.023), lift 0 falls through, 0.5 is launched, 1-2 lands cleanly, so 2.0 holds for both.
