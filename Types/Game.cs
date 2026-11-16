@@ -281,14 +281,29 @@ namespace SciLors_Mashed_Trainer.Types {
                 player.Update();
             }
 
+            ProcessPendingEquips();
             ExecuteExtraFeatures();
             RaisePropertyChanged();
         }
 
+        // The game frees a dropped weapon's slot only in its next frame (e.g. mines: weapon_mines_update
+        // releases the equip record that unequip just marked). Equipping before that frame ran can
+        // overrun the 4-entry mine equip-record array and crash (all players getting mines at once).
+        // So EquipWeapon drops now and equips from Update() after at least one game frame.
+        private const int EQUIP_DELAY_MS = 500;
+        private readonly Dictionary<PlayerId, (WeaponId Weapon, DateTime Due)> pendingEquips = new();
+
         public void EquipWeapon(PlayerId playerId, WeaponId weaponId) {
             DropWeapon(playerId);
-            if (funcChangeWeapon != IntPtr.Zero) {
-                Target.ExecuteStdcall(funcChangeWeapon, (int)playerId, (int)weaponId);
+            pendingEquips[playerId] = (weaponId, DateTime.Now.AddMilliseconds(EQUIP_DELAY_MS));
+        }
+
+        private void ProcessPendingEquips() {
+            foreach (var (playerId, pending) in pendingEquips.ToList()) {
+                if (DateTime.Now < pending.Due) continue;
+                pendingEquips.Remove(playerId);
+                if (funcChangeWeapon != IntPtr.Zero)
+                    Target.ExecuteStdcall(funcChangeWeapon, (int)playerId, (int)pending.Weapon);
             }
         }
 
