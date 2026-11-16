@@ -289,18 +289,25 @@ namespace SciLors_Mashed_Trainer.Types {
         // The game frees a dropped weapon's slot only in its next frame (e.g. mines: weapon_mines_update
         // releases the equip record that unequip just marked). Equipping before that frame ran can
         // overrun the 4-entry mine equip-record array and crash (all players getting mines at once).
-        // So EquipWeapon drops now and equips from Update() after at least one game frame.
-        private const int EQUIP_DELAY_MS = 500;
-        private readonly Dictionary<PlayerId, (WeaponId Weapon, DateTime Due)> pendingEquips = new();
+        // So EquipWeapon drops now and equips from Update() once the game's tick counter has advanced
+        // by 2: g_tick_number is incremented by the same race update that runs weapons_update_frame,
+        // so the slot is freed by then. The counter is reset at race start; a pending equip from an
+        // earlier race is discarded.
+        private readonly IntPtr TICK_NUMBER = new IntPtr(0x7EF804);
+        private const int EQUIP_AFTER_TICKS = 2;
+        private readonly Dictionary<PlayerId, (WeaponId Weapon, int DropTick)> pendingEquips = new();
 
         public void EquipWeapon(PlayerId playerId, WeaponId weaponId) {
             DropWeapon(playerId);
-            pendingEquips[playerId] = (weaponId, DateTime.Now.AddMilliseconds(EQUIP_DELAY_MS));
+            pendingEquips[playerId] = (weaponId, Target.Read<int>(TICK_NUMBER));
         }
 
         private void ProcessPendingEquips() {
+            if (pendingEquips.Count == 0) return;
+            int tick = Target.Read<int>(TICK_NUMBER);
             foreach (var (playerId, pending) in pendingEquips.ToList()) {
-                if (DateTime.Now < pending.Due) continue;
+                if (tick < pending.DropTick) { pendingEquips.Remove(playerId); continue; }
+                if (tick < pending.DropTick + EQUIP_AFTER_TICKS) continue;
                 pendingEquips.Remove(playerId);
                 if (funcChangeWeapon != IntPtr.Zero)
                     Target.ExecuteStdcall(funcChangeWeapon, (int)playerId, (int)pending.Weapon);
