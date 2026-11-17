@@ -1,4 +1,4 @@
-# SciLor's Mashed Trainer v0.2.2
+# SciLor's Mashed Trainer v0.2.3
 
 A trainer for the PC game **Mashed: Fully Loaded**. Change scores, weapons, damage and positions for every player, tweak the camera, and add fun modifiers like random weapons and drive-over revive.
 
@@ -78,6 +78,9 @@ Start the trainer with `--simulate` to run against a built-in fake game (`MockMe
 ---
 
 ## ChangeLog
+
+### v0.2.3 (2026-11-17)
+- Fixed a game crash when giving mines to all players at once: dropping and equipping a weapon in the same game frame overran the game's 4-entry mine record array. The equip now waits until the game has run its next ticks
 
 ### v0.2.2 (2026-11-14)
 - Fixed Flip: the car no longer falls through the ground (lift 2.0, measured in the original game)

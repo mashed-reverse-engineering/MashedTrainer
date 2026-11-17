@@ -137,7 +137,10 @@ namespace SciLors_Mashed_Trainer.Core {
             // No-op in mock
         }
 
+        public System.Collections.Generic.List<(IntPtr Func, int[] Args)> Calls { get; } = new();
+
         public int ExecuteStdcall(IntPtr functionAddress, params int[] arguments) {
+            Calls.Add((functionAddress, arguments));
             // Mock execution success
             return 0;
         }

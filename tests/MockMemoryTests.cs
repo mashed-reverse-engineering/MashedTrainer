@@ -2,6 +2,7 @@ using System;
 using NUnit.Framework;
 using SciLors_Mashed_Trainer.Core;
 using SciLors_Mashed_Trainer.Types;
+using SciLors_Mashed_Trainer.Types.Weapons;
 
 namespace SciLors_Mashed_Trainer.Tests {
     [TestFixture]
@@ -114,6 +115,47 @@ namespace SciLors_Mashed_Trainer.Tests {
 
             Assert.That(p1.DamageFront, Is.EqualTo(0.0f).Within(0.01f));
             Assert.That(p1.IsDamagedHood, Is.False);
+        }
+
+        [Test]
+        public void TestEquipWaitsForNextGameTick() {
+            // drop + equip in the same game frame overruns the 4-entry mine equip-record array (crash),
+            // so the equip must only run once the game's tick counter (0x7EF804) advanced by 2
+            var tick = new IntPtr(0x7EF804);
+            target.Write<int>(tick, 100);
+            target.Calls.Clear();
+
+            game.EquipWeapon(Player.PlayerId.ONE, Weapon.WeaponId.Mines);
+            Assert.That(target.Calls.Count, Is.EqualTo(1), "only the drop runs immediately");
+            var drop = target.Calls[0];
+
+            game.Update();
+            target.Write<int>(tick, 101);
+            game.Update();
+            Assert.That(target.Calls.Count, Is.EqualTo(1), "one tick is not enough");
+
+            target.Write<int>(tick, 102);
+            game.Update();
+            Assert.That(target.Calls.Count, Is.EqualTo(2), "equip runs after 2 ticks");
+            Assert.That(target.Calls[1].Func, Is.Not.EqualTo(drop.Func), "second call is the equip, not another drop");
+            Assert.That(target.Calls[1].Args, Is.EqualTo(new[] { (int)Player.PlayerId.ONE, (int)Weapon.WeaponId.Mines }));
+
+            game.Update();
+            Assert.That(target.Calls.Count, Is.EqualTo(2), "equip runs only once");
+        }
+
+        [Test]
+        public void TestEquipDiscardedWhenTickCounterReset() {
+            // counter is reset at race start: a pending equip from the previous race must not fire
+            var tick = new IntPtr(0x7EF804);
+            target.Write<int>(tick, 500);
+            target.Calls.Clear();
+            game.EquipWeapon(Player.PlayerId.ONE, Weapon.WeaponId.Mines);
+            target.Write<int>(tick, 3);
+            game.Update();
+            target.Write<int>(tick, 600);
+            game.Update();
+            Assert.That(target.Calls.Count, Is.EqualTo(1), "only the drop, equip discarded");
         }
     }
 }
